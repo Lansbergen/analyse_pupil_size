@@ -1,0 +1,4 @@
+﻿  analysepupilsize_main.cpp
+d:\dropbox\nin\video_software\analysepupilsize\analysepupilsize\analysepupilsize_main.cpp(498): warning C4806: '==': unsafe operation: no value of type 'bool' promoted to type 'int' can equal the given constant
+d:\dropbox\nin\video_software\analysepupilsize\analysepupilsize\analysepupilsize_main.cpp(578): warning C4244: '=': conversion from 'double' to 'int', possible loss of data
+  analysepupilsize.vcxproj -> D:\Dropbox\NIN\Video_software\analysepupilsize\x64\Debug\analysepupilsize.exe
