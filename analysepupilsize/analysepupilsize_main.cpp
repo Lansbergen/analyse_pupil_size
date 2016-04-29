@@ -12,11 +12,12 @@
 //------------------------------------------------------------------------//
 //
 //		Revision:
-//			
+//			- fully working and tested. see algorithm part for steps.
+//			- can be compiled in release mode.
 //			
 //			
 //
-//	last edited - 16-4-2016, SL
+//	last edited - 29-4-2016, SL
 //
 //------------------------------------------------------------------------//
 //
@@ -63,7 +64,7 @@ int main(int argc, char* argv[])
 	int thres_mode = 0;
 	ThresholdTypes thres_type = THRESH_BINARY;
 	const char* thres_name = "THRESH_BINARY";
-	int cFramesPerSecond = 20;
+	double fps;
 	const char* save_path = "c:/output.avi";
 	const char* save_path_num = "c:/output.txt";
 	string sav_pat = "c:/output.avi";
@@ -166,9 +167,6 @@ int main(int argc, char* argv[])
 		if (cfg.keyExists("threshold") == true) { // get threshold value
 			threshold_ = cfg.getValueOfKey<double>("threshold");
 		}
-		if (cfg.keyExists("frames_per_sec") == true) { // get frames per second
-			cFramesPerSecond = cfg.getValueOfKey<int>("frames_per_sec");
-		}
 		if (cfg.keyExists("save_path_vid") == true) { // get video output file name & path
 			sav_pat = cfg.getValueOfKey<string>("save_path_vid");
 			save_path = sav_pat.c_str();
@@ -189,7 +187,7 @@ int main(int argc, char* argv[])
 			ROI_start_y = cfg.getValueOfKey<int>("ROI_start_y");
 			ROI_start_x = cfg.getValueOfKey<int>("ROI_start_x");
 			ROI_start = Size(ROI_start_x, ROI_start_y);
-			ROI_start_auto = 0;
+			ROI_start_auto = false;
 		}
 		if (cfg.keyExists("width_SE") == true && cfg.keyExists("heigth_SE") == true) { // get dimensions SE
 			width_SE = cfg.getValueOfKey<int>("width_SE");
@@ -310,7 +308,7 @@ int main(int argc, char* argv[])
 		}
 	}
 	// input: [open vid] [config.cfg]
-	else if (argc == 2)
+	else if (argc == 3)
 	{
 		if (isdigit(*argv[1]) || isdigit(*argv[2])) {	// index starts at 0
 			puts("Not a number: Wrong input argument for [open vid] or [config.cfg] ?");
@@ -348,7 +346,6 @@ int main(int argc, char* argv[])
 		cout << "* Open path original stream           : " << filename << endl;
 		cout << "* Save path numerical output          : " << save_path_num << endl;
 		cout << endl;
-		cout << "* Frames per second                   : " << cFramesPerSecond << endl;
 		cout << "* Heigth and width ROI                : " << ROI_dimensions << endl;
 		if (ROI_start_auto == false) {
 			cout << "* Anchor coordinate [X,Y] ROI \n  manually set                        : " << ROI_start << endl;
@@ -384,21 +381,7 @@ int main(int argc, char* argv[])
 	}
 
 
-
-	// set variables for on screen text output
-	if (show_ost == true) {
-		// text for ROI size
-		ost1 << "ROI size: " << ROI_dimensions.width << "x" << ROI_dimensions.height;
-		size_roi = ost1.str();
-		// text for frame rate
-		ost2 << "Frame rate : " << cFramesPerSecond << " Hz";
-		frame_rate = ost2.str();
-		// text with save path & name
-		ost3 << save_path;
-		output_file = ost3.str();
-	}
-
-
+		
 	//--------------------//
 	// Setup main program //
 	//--------------------//
@@ -418,6 +401,13 @@ int main(int argc, char* argv[])
 	// show dimensions [X,Y] video stream
 	cout << endl << "Dimensions video file :" << endl;
 	cout << endl << "Width : " << size_vid.width << endl << "Heigth : " << size_vid.height << endl;
+
+
+	// get frame rate video file
+	fps = capture.get(CV_CAP_PROP_FPS);
+	cout << endl << "Frame rate video file : " << fps << endl;
+
+
 
 	// pause - hit any key - to continue
 	cout << endl << "Hit key to continue" << endl;
@@ -441,12 +431,21 @@ int main(int argc, char* argv[])
 	// set Structuring Element
 	Mat SE = getStructuringElement(MORPH_ELLIPSE, SE_morph, Point(-1, -1));
 
-	// create Mat image template	
-	Mat cv_img(size_vid.width, size_vid.height, CV_8UC3);
-
 	// contour variables
 	vector<vector<Point> > contours;
 	
+	// set variables for on screen text output
+	if (show_ost == true) {
+		// text for ROI size
+		ost1 << "ROI size: " << ROI_dimensions.width << "x" << ROI_dimensions.height;
+		size_roi = ost1.str();
+		// text for frame rate
+		ost2 << "Frame rate : " << fps << " Hz";
+		frame_rate = ost2.str();
+		// text with save path & name
+		ost3 << save_path;
+		output_file = ost3.str();
+	}
 
 	//--------------------------------//
 	// Open avi and txt output stream //
@@ -455,7 +454,7 @@ int main(int argc, char* argv[])
 	// open video writer object: End Result
 	if (save_video == true) {
 
-		roi_end_result.open(save_path, CV_FOURCC('M', 'P', 'E', 'G'), cFramesPerSecond, ROI_dimensions, true);
+		roi_end_result.open(save_path, CV_FOURCC('M', 'P', 'E', 'G'), fps, ROI_dimensions, true);
 
 		//if the VideoWriter file is not initialized successfully, exit the program.
 		if (!roi_end_result.isOpened())
@@ -486,20 +485,21 @@ int main(int argc, char* argv[])
 
 		// Step 1
 		//
-		// convert to Mat - openCV format for analysis
-		cvtColor(frame, eye, COLOR_BGR2GRAY);
+		// convert to propper GRAY scaled image
+		cvtColor(frame, frame, COLOR_RGB2GRAY);
 
 		// Step 2
 		//
 		// take ROI from eye original
-		eye = cv_img;
+		eye = frame;
 		roi_eye = eye(roi);
 		// make RGB copy of ROI for end result
 		if (!roi_eye.channels() == 3) {
 			cvtColor(roi_eye, roi_eye_rgb, CV_GRAY2RGB);
 		}
 		else {
-			roi_eye_rgb = roi_eye;
+			cvtColor(roi_eye, roi_eye_rgb, CV_GRAY2RGB);
+			//roi_eye_rgb = roi_eye;
 		}
 
 		// Step 3
