@@ -506,27 +506,28 @@ int main(int argc, char* argv[])
 		//
 		// apply Gaussian blur to ROI
 		GaussianBlur(roi_eye, blur, blur_dimensions, 0, 0, BORDER_DEFAULT);
-
+		
 		// Step 4
 		//
 		// Convert to binary image by thresholding it
 		threshold(blur, thres, threshold_, 255, thres_type);
-
+		if (thresholded_image == true) { imshow("Thresholded", thres); }
 		// Step 5
 		//
 		// Morphological closing (erosion and dilation)
 		morphologyEx(thres, close, MORPH_CLOSE, SE, Point(-1, -1), itterations_close);
-
+		if (closed_image == true) { imshow("Morphological closing", close); }
 		// Step 6
 		//
 		// Canny algorithm
-		Canny(close, canny, threshold1_canny, threshold2_canny, aperture_canny, true);
-
+		//Canny(thres, canny, threshold1_canny, threshold2_canny, aperture_canny, true);
+				
 		// Step 7
 		//
 		// find contour algorithm
-		findContours(canny, contours, RETR_LIST, CHAIN_APPROX_NONE);
-
+		//findContours(canny, contours, RETR_LIST, CHAIN_APPROX_NONE);
+		findContours(close, contours, RETR_LIST, CHAIN_APPROX_NONE);
+		
 		// Step 8
 		// 
 		// Fit ellipse and draw on image
@@ -622,8 +623,8 @@ int main(int argc, char* argv[])
 
 		if (original_image == true) { imshow("original", eye); }
 		if (blurred_image == true) { imshow("Gaussian blur", blur); }
-		if (thresholded_image == true) { imshow("Thresholded", thres); }
-		if (closed_image == true) { imshow("Morphological closing", close); }
+		//if (thresholded_image == true) { imshow("Thresholded", thres); }
+		//if (closed_image == true) { imshow("Morphological closing", close); }
 		if (canny_image == true) { imshow("Canny filter", canny); }
 		if (end_result_image == true) { imshow("Result (ROI)", roi_eye_rgb); }
 
